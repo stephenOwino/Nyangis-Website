@@ -5,29 +5,35 @@ import com.stephenowinoh.Avante_garde_backend.Entity.Product;
 import com.stephenowinoh.Avante_garde_backend.Mapper.ProductMapper;
 import com.stephenowinoh.Avante_garde_backend.Repository.ProductRepository;
 import com.stephenowinoh.Avante_garde_backend.enums.Category;
-import com.stephenowinoh.Avante_garde_backend.enums.Status;
 import jakarta.transaction.Transactional;
+import jakarta.validation.ConstraintViolation;
 import org.springframework.data.domain.Page;
+import jakarta.validation.ConstraintViolationException;
+import jakarta.validation.Validator;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+
+import java.util.Arrays;
+import java.util.Set;
 
 @Service
 public class ProductService {
 
         private final ProductRepository productRepository;
         private final ProductMapper productMapper;
+        private final Validator validator;
 
-        public ProductService(ProductRepository productRepository, ProductMapper productMapper) {
+        public ProductService(ProductRepository productRepository, ProductMapper productMapper, Validator validator) {
                 this.productRepository = productRepository;
                 this.productMapper = productMapper;
+                this.validator = validator;
         }
 
         @Transactional
         public ProductDTO createProduct(ProductDTO dto) {
-                // Set creation timestamp and initialize views
+                validateDTO(dto);
                 dto.setPostedAt(System.currentTimeMillis());
                 dto.setViews(0);
-
                 Product product = productMapper.toEntity(dto);
                 Product savedProduct = productRepository.save(product);
                 return productMapper.toDTO(savedProduct);
@@ -39,42 +45,54 @@ public class ProductService {
         }
 
         public Page<ProductDTO> getProductsByCategory(String category, Pageable pageable) {
+                if (category == null || category.trim().isEmpty()) {
+                        throw new IllegalArgumentException("Category cannot be null or empty");
+                }
+
                 Category categoryEnum;
                 try {
                         categoryEnum = Category.valueOf(category.toUpperCase());
                 } catch (IllegalArgumentException e) {
-                        throw new IllegalArgumentException("Invalid category: " + category);
+                        throw new IllegalArgumentException("Invalid category: " + category + ". Valid categories are: " +
+                                Arrays.toString(Category.values()));
                 }
-                return productRepository.findByCategory(categoryEnum.name(), pageable)
+
+                return productRepository.findByCategory(String.valueOf(categoryEnum), pageable)
                         .map(productMapper::toDTO);
         }
 
+        @Transactional
         public ProductDTO getProductById(Long id) {
                 Product product = productRepository.findById(id)
                         .orElseThrow(() -> new IllegalArgumentException("Product not found with id: " + id));
-                // Increment views
-                product.setViews(product.getViews() != null ? product.getViews() + 1 : 1);
+                product.setViews(product.getViews() + 1);
                 Product updatedProduct = productRepository.save(product);
                 return productMapper.toDTO(updatedProduct);
         }
 
         @Transactional
         public ProductDTO updateProduct(Long id, ProductDTO dto) {
+                validateDTO(dto);
                 Product product = productRepository.findById(id)
                         .orElseThrow(() -> new IllegalArgumentException("Product not found with id: " + id));
 
-                // Update fields if provided in DTO, otherwise retain existing values
-                product.setDescription(dto.getDescription() != null ? dto.getDescription() : product.getDescription());
-                product.setStatus(dto.getStatus() != null ? Status.valueOf(dto.getStatus()) : product.getStatus());
-                product.setCategory(dto.getCategory() != null ? Category.valueOf(dto.getCategory()) : product.getCategory());
-                product.setImageUrl(dto.getImageUrl() != null ? dto.getImageUrl() : product.getImageUrl());
-                product.setPrice(dto.getPrice() != null ? dto.getPrice() : product.getPrice());
-                product.setLocation(dto.getLocation() != null ? dto.getLocation() : product.getLocation());
-                product.setType(dto.getType() != null ? dto.getType() : product.getType());
-                product.setCondition(dto.getCondition() != null ? dto.getCondition() : product.getCondition());
-                // postedAt and views are managed by the system, not updated via DTO
-                product.setPostedAt(dto.getPostedAt() != null ? dto.getPostedAt() : product.getPostedAt());
-                product.setViews(dto.getViews() != null ? dto.getViews() : product.getViews());
+                product.setDescription(dto.getDescription());
+                product.setStatus(dto.getStatus());
+                product.setCategory(dto.getCategory());
+                product.setPrice(dto.getPrice());
+                product.setLocation(dto.getLocation());
+                product.setType(dto.getType());
+                product.setCondition(dto.getCondition());
+
+                if (dto.getImageUrl() != null) {
+                        product.setImageUrl(dto.getImageUrl());
+                }
+                if (dto.getPostedAt() != null) {
+                        product.setPostedAt(dto.getPostedAt());
+                }
+                if (dto.getViews() != null) {
+                        product.setViews(dto.getViews());
+                }
 
                 Product updatedProduct = productRepository.save(product);
                 return productMapper.toDTO(updatedProduct);
@@ -86,5 +104,12 @@ public class ProductService {
                         throw new IllegalArgumentException("Product not found with id: " + id);
                 }
                 productRepository.deleteById(id);
+        }
+
+        private void validateDTO(ProductDTO dto) {
+                Set<ConstraintViolation<ProductDTO>> violations = validator.validate(dto);
+                if (!violations.isEmpty()) {
+                        throw new ConstraintViolationException(violations);
+                }
         }
 }

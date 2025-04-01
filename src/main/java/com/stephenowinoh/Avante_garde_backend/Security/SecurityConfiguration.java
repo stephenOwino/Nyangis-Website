@@ -65,6 +65,7 @@ public class SecurityConfiguration implements WebMvcConfigurer {
                                 .requestMatchers("/chat/**").permitAll()
                                 .requestMatchers("/api/products").permitAll()
                                 .requestMatchers("/api/products/category/**").permitAll()
+                                .requestMatchers(HttpMethod.GET, "/api/products/**").permitAll() // Allow GET requests to /api/products/{id}
                                 .requestMatchers("/api/products/uploads/**").permitAll()
                                 .requestMatchers("/uploads/**").permitAll() // Add this for static files
                                 .requestMatchers(HttpMethod.POST, "/api/products/upload").authenticated()
@@ -85,9 +86,6 @@ public class SecurityConfiguration implements WebMvcConfigurer {
                                 })
                         )
                         .build();
-
-
-
         }
 
         @Bean

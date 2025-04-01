@@ -5,15 +5,16 @@ import com.stephenowinoh.Avante_garde_backend.enums.Status;
 import jakarta.persistence.*;
 import lombok.Data;
 
-@Entity
 @Data
+@Entity
 @Table(name = "products")
 public class Product {
+
         @Id
         @GeneratedValue(strategy = GenerationType.IDENTITY)
         private Long id;
 
-        @Column(name = "imageurl")
+        @Column(name = "imageurl") // Match the actual column name in the database
         private String imageUrl;
 
         @Column(nullable = false)
@@ -33,15 +34,18 @@ public class Product {
         @Column(nullable = false)
         private String location;
 
-        private Long postedAt; // Timestamp in milliseconds
+        @Column(name = "posted_at")
+        private Long postedAt;
 
-        private Integer views; // View count
+        @Column(nullable = false)
+        private Integer views;
 
         @Column(nullable = false)
         private String type;
 
         @Column(nullable = false)
         private String condition;
+
 
         public Long getId() {
                 return id;
