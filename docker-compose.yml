@@ -1,0 +1,51 @@
+version: '3.8'
+
+services:
+  app:
+    build: .
+    container_name: avante_garde_backend
+    restart: always
+    ports:
+      - "9900:9900"
+    depends_on:
+      - db
+    environment:
+      SPRING_APPLICATION_NAME: Avante_garde_backend
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/avante_garde
+      SPRING_DATASOURCE_USERNAME: stephen
+      SPRING_DATASOURCE_PASSWORD: Steve@123
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+      SPRING_JPA_SHOW_SQL: "true"
+      SPRING_JPA_PROPERTIES_HIBERNATE_DIALECT: org.hibernate.dialect.PostgreSQLDialect
+      SPRING_JPA_PROPERTIES_HIBERNATE_FORMAT_SQL: "true"
+      LOGGING_LEVEL_ORG_HIBERNATE_SQL: DEBUG
+      LOGGING_LEVEL_ORG_HIBERNATE_TYPE_DESCRIPTOR_SQL: TRACE
+      SERVER_PORT: 9900
+      JWT_SECRET: b60f7fab56292326b0a8a991f5d520dd92d1d7bd063e915cb9735ff07c999e3a
+      JWT_EXPIRATION: 3600000
+      FILE_UPLOAD_DIR: /uploads
+    volumes:
+      - /home/stephen/uploads:/uploads
+    networks:
+      - avante_garde_network
+
+  db:
+    image: postgres:15
+    container_name: avante_garde_db
+    restart: always
+    environment:
+      POSTGRES_DB: avante_garde
+      POSTGRES_USER: stephen
+      POSTGRES_PASSWORD: Steve@123
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    networks:
+      - avante_garde_network
+
+volumes:
+  pgdata:
+
+networks:
+  avante_garde_network:
