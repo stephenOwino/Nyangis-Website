@@ -6,7 +6,7 @@ COPY src ./src
 RUN mvn clean package -DskipTests
 
 # Stage 2: Run Java application
-FROM openjdk:17-jre-slim
+FROM eclipse-temurin:17-jre
 WORKDIR /app
 COPY --from=builder /app/target/Avante_garde_backend-0.0.1-SNAPSHOT.jar app.jar
 EXPOSE 9900
